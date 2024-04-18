@@ -1,6 +1,5 @@
 using BowlingGameKata.Domain.Models;
 using FluentAssertions;
-using System.ComponentModel.DataAnnotations;
 
 namespace BowlingGameKataTests;
 
@@ -54,17 +53,16 @@ public class GameTests
         // Arrange
         var game = new Game();
         game.AddPlayer(new Player("Player 1"));
-        const int maxNumberOfFrames = 10;
 
         // Act
-        for (int i = 0; i < maxNumberOfFrames; i++)
+        for (int i = 0; i < MaxNumberOfFrames; i++)
         {
             game.Roll(2);
             game.Roll(7);
         }
 
         // Assert
-        game.Frame.Should().Be(maxNumberOfFrames - 1);
+        game.Frame.Should().Be(MaxNumberOfFrames - 1);
     }
 
     [Fact(DisplayName = "Game | When player strikes in the first roll | Should move to new frame.")]
@@ -81,7 +79,7 @@ public class GameTests
         game.Frame.Should().Be(1);
     }
 
-    [Fact(DisplayName = "Game | When player strikes in the first roll | Should move to new frame.")]
+    [Fact(DisplayName = "Game | When player strikes in the first roll | Should add next 2 rolls points.")]
     public void Game_WhenPlayerScoredStrikeOnFirstRoll_ShouldAddNextRollsPointToTheFirstScore()
     {
         // Arrange
@@ -102,12 +100,13 @@ public class GameTests
         game.Roll(2);
 
         // Assert
-        // First frame score = 10 + 2 + 5 + 6 + 2 = 25
+        // First frame score = 10 + 2 + 5 = 17
         // Second frame score = 2 + 5 = 7
         // Third frame score = 6 + 2 = 8
         // Total = 40
-        game.Score().Should().Be(40);
+        game.Score().Should().Be(32);
     }
+
     [Fact(DisplayName = "Game | When player plays a perfect game | Should have a final score of 300.")]
     public void Game_WhenPlayerPlaysAPerfectGame_ShouldHaveAFinalScoreOf300()
     {
@@ -125,6 +124,28 @@ public class GameTests
 
         // Assert
         game.Score().Should().Be(300);
+    }
+
+    [Fact(DisplayName = "Game | When player does the best possible game without strikes | Should have a final score of 190.")]
+    public void Game_WhenPlayerPlaysDoesTheBestPossibleGameWithoutStrikes_ShouldHaveAFinalScoreOf190()
+    {
+        // Arrange
+        var game = new Game();
+        var player = new Player("Player 1");
+        game.AddPlayer(player);
+
+        // Act
+        for(int i = 0; i < MaxNumberOfFrames; i++)
+        {
+            game.Roll(9);
+            game.Roll(1);
+        }
+
+        // A player can Roll one extra time in the last frame.
+        game.Roll(9);
+
+        // Assert
+        game.Score().Should().Be(190);
     }
 
     [InlineData(-5)]
