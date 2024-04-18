@@ -1,7 +1,4 @@
-﻿using BowlingGameKata.Domain.Models;
-using FluentAssertions;
-
-namespace BowlingGameKataTests;
+﻿namespace BowlingGameKataTests;
 public class PlayerTests
 {
 

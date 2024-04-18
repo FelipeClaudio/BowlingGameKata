@@ -1,6 +1,5 @@
 using BowlingGameKata.Domain.Models;
 using FluentAssertions;
-using System.ComponentModel.DataAnnotations;
 
 namespace BowlingGameKataTests;
 
@@ -54,17 +53,16 @@ public class GameTests
         // Arrange
         var game = new Game();
         game.AddPlayer(new Player("Player 1"));
-        const int maxNumberOfFrames = 10;
 
         // Act
-        for (int i = 0; i < maxNumberOfFrames; i++)
+        for (int i = 0; i < MaxNumberOfFrames; i++)
         {
             game.Roll(2);
             game.Roll(7);
         }
 
         // Assert
-        game.Frame.Should().Be(maxNumberOfFrames - 1);
+        game.Frame.Should().Be(MaxNumberOfFrames - 1);
     }
 
     [Fact(DisplayName = "Game | When player strikes in the first roll | Should move to new frame.")]
