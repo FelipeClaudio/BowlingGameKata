@@ -6,10 +6,7 @@ public class Game
 {
     public int Frame { get; private set; }
 
-    public Game()
-    {
-        Frame = 0;
-    }
+    public Game() => Frame = 0;
 
     private const int MaxGamePoints = 300;
     private const int NumberOfPins = 10;
@@ -30,7 +27,6 @@ public class Game
 
         if (numberOfPinsKnockedDown < 0 || numberOfPinsKnockedDown > NumberOfPins)
             throw new ArgumentOutOfRangeException(nameof(numberOfPinsKnockedDown));
-
 
         var incrementedCurrentPlayerScore = GetFrameForPlayer(_currentPlayerIndex, Frame).Score + numberOfPinsKnockedDown;
         if (incrementedCurrentPlayerScore > MaxGamePoints)
