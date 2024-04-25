@@ -2,7 +2,7 @@
 
 namespace BowlingGameKata.Domain.Models;
 
-public class Game
+public class Game(int maxNumberOfPlayers = 4)
 {
     public Frame Frame { get => GetFrameForPlayer(_currentPlayer.Id); }
 
@@ -14,6 +14,7 @@ public class Game
     private int _currentPlayerIndex = 0;
 
     private readonly List<Frame> _frames = [];
+    private readonly int _maxNumberOfPlayers = maxNumberOfPlayers;
 
     private Player _currentPlayer => _players[_currentPlayerIndex];
 
@@ -42,8 +43,7 @@ public class Game
 
         if (currentFrameForPlayer.Id < (MaxFrames - 1) && (currentFrameForPlayer.CurrentTry == 1 || incrementedCurrentPlayerScore == NumberOfPins))
         {
-            currentFrameForPlayer.IsLatest = false;
-            _frames[currentFrameForPlayer.Id + 1].IsLatest = true;
+            MoveToNextPlay(currentFrameForPlayer);
             return;
         }
         currentFrameForPlayer.CurrentTry++;
@@ -53,14 +53,30 @@ public class Game
 
         if (currentFrameForPlayer.Id < (MaxFrames - 1) && currentFrameForPlayer.CurrentTry == 2)
         {
-            currentFrameForPlayer.IsLatest = false;
-            _frames[currentFrameForPlayer.Id + 1].IsLatest = true;
+            MoveToNextPlay(currentFrameForPlayer);
+        }
+    }
+
+    private void MoveToNextPlay(Frame currentFrameForPlayer)
+    {
+        currentFrameForPlayer.IsLatest = false;
+        _frames[currentFrameForPlayer.Id + 1].IsLatest = true;
+
+        if (_players.Count > 1) 
+        {
+            var newPlayerIndex = (currentFrameForPlayer.PlayerId + 1) % _players.Count;
+            _currentPlayerIndex = newPlayerIndex;
         }
     }
 
     public int Score() =>
         _frames
             .Where(frame => frame.PlayerId == _currentPlayerIndex)
+            .Sum(frame => frame.Score);
+
+    public int GetPlayerScore(int playerId) => 
+        _frames
+            .Where(frame => frame.PlayerId == playerId)
             .Sum(frame => frame.Score);
 
     public void AddScore(int score)
@@ -78,7 +94,7 @@ public class Game
     private void AddScoreToPreviousRoll(int score)
     {
         var previousFrameForPlayer = _frames
-            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == _currentPlayer.CurrentRoll - 1));
+            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == _currentPlayer.CurrentRoll - 1) && frame.PlayerId == _currentPlayer.Id);
         var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
 
         if (previousFrameForPlayer == null)
@@ -121,6 +137,9 @@ public class Game
 
     public void AddPlayer(Player player)
     {
+        if (_players.Count == _maxNumberOfPlayers)
+            throw new InvalidOperationException($"Cannot have more than {_maxNumberOfPlayers} in this bowling game");
+
         player.Id = _players.Count;
 
         for (int i = 0; i < NumberOfPins; i++)

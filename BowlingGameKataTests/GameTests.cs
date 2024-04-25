@@ -148,6 +148,48 @@ public class GameTests
         game.Score().Should().Be(190);
     }
 
+    [Fact(DisplayName = "Game | When two players are added | Should track points for both players.")]
+    public void Game_TwoPlayersAreAdded_ShouldTrackPointsForBothPlayers()
+    {
+        // Arrange
+        var game = new Game();
+        var player1= new Player("Player 1");
+        game.AddPlayer(player1);
+        var player2 = new Player("Player 2");
+        game.AddPlayer(player2);
+
+        // Act
+        // Player 1
+        game.Roll(3);
+        game.Roll(5);
+
+        // Player 2
+        game.Roll(2);
+        game.Roll(4);
+
+        // Assert
+        game.GetPlayerScore(player1.Id).Should().Be(8);
+        game.GetPlayerScore(player2.Id).Should().Be(6);
+    }
+
+    [Fact(DisplayName = "Game | When adding more players than allowed by the game | Should throw exception.")]
+    public void Game_AddingMorePlayersThanAllowedByTheGame_ShouldThrowException()
+    {
+        // Arrange
+        const int maxNumberOfPlayers = 4;
+        var game = new Game(maxNumberOfPlayers);
+        for (int i = 0; i < maxNumberOfPlayers; i++)
+        {
+            game.AddPlayer(new Player($"Player {i + 1}"));
+        }
+
+        // Act
+        Action act = () => game.AddPlayer(new Player($"Player {maxNumberOfPlayers + 1}")); 
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
+    }
+
     [InlineData(-5)]
     [InlineData(11)]
     [Theory(DisplayName ="Game | When invalid number of knocked down pins is provided | Should return exception.")]
