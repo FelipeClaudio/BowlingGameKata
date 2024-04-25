@@ -44,7 +44,7 @@ public class GameTests
         }
 
         // Assert
-        game.Frame.Should().Be(numberOfFrames - 1);
+        game.Frame.Id.Should().Be(numberOfFrames - 1);
     }
 
     [Fact(DisplayName ="Game | When game is in the last frame | Should be possible to play 3 times to strike all pins.")]
@@ -62,7 +62,7 @@ public class GameTests
         }
 
         // Assert
-        game.Frame.Should().Be(MaxNumberOfFrames - 1);
+        game.Frame.Id.Should().Be(MaxNumberOfFrames - 1);
     }
 
     [Fact(DisplayName = "Game | When player strikes in the first roll | Should move to new frame.")]
@@ -76,7 +76,7 @@ public class GameTests
         game.Roll(NumberOfPins);
 
         // Assert
-        game.Frame.Should().Be(1);
+        game.Frame.Id.Should().Be(1);
     }
 
     [Fact(DisplayName = "Game | When player strikes in the first roll | Should add next 2 rolls points.")]
