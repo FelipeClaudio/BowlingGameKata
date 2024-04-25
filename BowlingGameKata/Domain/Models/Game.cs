@@ -6,6 +6,8 @@ public class Game(int maxNumberOfPlayers = 4)
 {
     public Frame Frame { get => GetFrameForPlayer(CurrentPlayer.Id); }
 
+    public Player? Winner = null;
+
     private const int MaxGamePoints = 300;
     private const int NumberOfPins = 10;
     private const int MaxFrames = 10;
@@ -26,10 +28,10 @@ public class Game(int maxNumberOfPlayers = 4)
         if (numberOfPinsKnockedDown < 0 || numberOfPinsKnockedDown > NumberOfPins)
             throw new ArgumentOutOfRangeException(nameof(numberOfPinsKnockedDown));
 
+        if (Winner is not null)
+            throw new InvalidOperationException("Cannot play anymore as the game is already finished.");
+
         var incrementedCurrentPlayerScore = GetFrameForPlayer(_currentPlayerIndex).Score + numberOfPinsKnockedDown;
-        if (incrementedCurrentPlayerScore > MaxGamePoints)
-            throw new ValidationException($"Cannot add {numberOfPinsKnockedDown} to " +
-                $"player {CurrentPlayer.Name} as it would exceed the maximum gaming pontuation of {MaxGamePoints}");
 
         AddScore(numberOfPinsKnockedDown);
 
@@ -46,15 +48,25 @@ public class Game(int maxNumberOfPlayers = 4)
             MoveToNextPlay(currentFrameForPlayer);
             return;
         }
+
         currentFrameForPlayer.CurrentTry++;
 
-        if (currentFrameForPlayer.Id == (MaxFrames - 1) && currentFrameForPlayer.CurrentTry == 3)
-            return;
-
-        if (currentFrameForPlayer.Id < (MaxFrames - 1) && currentFrameForPlayer.CurrentTry == 2)
+        if ((currentFrameForPlayer.Id == (MaxFrames - 1)) && 
+            (currentFrameForPlayer.CurrentTry == 3) && 
+            (_currentPlayerIndex == _players.Count - 1))
         {
-            MoveToNextPlay(currentFrameForPlayer);
+            Winner = SetGameWinner();
         }
+    }
+
+    private Player SetGameWinner()
+    {
+        var winnerPlayerId = _frames.GroupBy(frame => frame.PlayerId)
+            .ToDictionary(group => group.Key, group => group.Sum(frame => frame.Score))
+            .OrderByDescending(x => x.Key)
+            .First().Key;
+
+        return _players[winnerPlayerId];
     }
 
     private void MoveToNextPlay(Frame currentFrameForPlayer)

@@ -149,7 +149,7 @@ public class GameTests
     }
 
     [Fact(DisplayName = "Game | When two players are added | Should track points for both players.")]
-    public void Game_TwoPlayersAreAdded_ShouldTrackPointsForBothPlayers()
+    public void Game_WhenTwoPlayersAreAdded_ShouldTrackPointsForBothPlayers()
     {
         // Arrange
         var game = new Game();
@@ -170,6 +170,27 @@ public class GameTests
         // Assert
         game.GetPlayerScore(player1.Id).Should().Be(8);
         game.GetPlayerScore(player2.Id).Should().Be(6);
+    }
+
+    [Fact(DisplayName = "Game | When there is no more round to play and a roll attempt was done | Should throw exception.")]
+    public void Game_WhenThereIsNoMoreRoundToPlayAndARollAttemptIsDone_ShouldThrowException()
+    {
+        // Arrange
+        var game = new Game();
+        game.AddPlayer(new Player("Player 1"));
+        
+        for (int i = 0; i < MaxNumberOfFrames; i++)
+        {
+            game.Roll(1);
+            game.Roll(8);
+        }
+        game.Roll(1);
+
+        // Act
+        Action act = () => game.Roll(2);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact(DisplayName = "Game | When adding more players than allowed by the game | Should throw exception.")]
