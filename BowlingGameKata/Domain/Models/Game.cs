@@ -4,7 +4,7 @@ namespace BowlingGameKata.Domain.Models;
 
 public class Game(int maxNumberOfPlayers = 4)
 {
-    public Frame Frame { get => GetFrameForPlayer(_currentPlayer.Id); }
+    public Frame Frame { get => GetFrameForPlayer(CurrentPlayer.Id); }
 
     private const int MaxGamePoints = 300;
     private const int NumberOfPins = 10;
@@ -16,7 +16,7 @@ public class Game(int maxNumberOfPlayers = 4)
     private readonly List<Frame> _frames = [];
     private readonly int _maxNumberOfPlayers = maxNumberOfPlayers;
 
-    private Player _currentPlayer => _players[_currentPlayerIndex];
+    private Player CurrentPlayer => _players[_currentPlayerIndex];
 
     public void Roll(int numberOfPinsKnockedDown)
     {
@@ -29,7 +29,7 @@ public class Game(int maxNumberOfPlayers = 4)
         var incrementedCurrentPlayerScore = GetFrameForPlayer(_currentPlayerIndex).Score + numberOfPinsKnockedDown;
         if (incrementedCurrentPlayerScore > MaxGamePoints)
             throw new ValidationException($"Cannot add {numberOfPinsKnockedDown} to " +
-                $"player {_currentPlayer.Name} as it would exceed the maximum gaming pontuation of {MaxGamePoints}");
+                $"player {CurrentPlayer.Name} as it would exceed the maximum gaming pontuation of {MaxGamePoints}");
 
         AddScore(numberOfPinsKnockedDown);
 
@@ -83,18 +83,18 @@ public class Game(int maxNumberOfPlayers = 4)
     {
         var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
         currentFrameForPlayer.Score += score;
-        currentFrameForPlayer.Rolls.Add(new Roll { Id = _currentPlayer.CurrentRoll });
+        currentFrameForPlayer.Rolls.Add(new Roll { Id = CurrentPlayer.CurrentRoll });
 
         AddScoreToPreviousRoll(score);
         AddScoreForTheFrameBeforeTheRoll(score);
 
-        _currentPlayer.CurrentRoll++;
+        CurrentPlayer.CurrentRoll++;
     }
 
     private void AddScoreToPreviousRoll(int score)
     {
         var previousFrameForPlayer = _frames
-            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == _currentPlayer.CurrentRoll - 1) && frame.PlayerId == _currentPlayer.Id);
+            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 1) && frame.PlayerId == CurrentPlayer.Id);
         var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
 
         if (previousFrameForPlayer == null)
@@ -103,7 +103,7 @@ public class Game(int maxNumberOfPlayers = 4)
         if (currentFrameForPlayer.Id == (MaxFrames - 1) && currentFrameForPlayer.CurrentTry > 1)
             return;
 
-        if ((_currentPlayer.CurrentRoll - previousFrameForPlayer.Rolls.Max(roll => roll.Id)) > 1)
+        if ((CurrentPlayer.CurrentRoll - previousFrameForPlayer.Rolls.Max(roll => roll.Id)) > 1)
             return;
 
         if (GetFrameForPlayer(_currentPlayerIndex).Id == previousFrameForPlayer.Id)
@@ -118,7 +118,7 @@ public class Game(int maxNumberOfPlayers = 4)
     private void AddScoreForTheFrameBeforeTheRoll(int score)
     {
         var rollBeforePreviousForPlayer = _frames
-            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == _currentPlayer.CurrentRoll - 2));
+            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 2));
 
         if (rollBeforePreviousForPlayer == null)
             return;
