@@ -44,7 +44,7 @@ public class GameTests
         }
 
         // Assert
-        game.Frame.Should().Be(numberOfFrames - 1);
+        game.Frame.Id.Should().Be(numberOfFrames - 1);
     }
 
     [Fact(DisplayName ="Game | When game is in the last frame | Should be possible to play 3 times to strike all pins.")]
@@ -62,7 +62,7 @@ public class GameTests
         }
 
         // Assert
-        game.Frame.Should().Be(MaxNumberOfFrames - 1);
+        game.Frame.Id.Should().Be(MaxNumberOfFrames - 1);
     }
 
     [Fact(DisplayName = "Game | When player strikes in the first roll | Should move to new frame.")]
@@ -76,7 +76,7 @@ public class GameTests
         game.Roll(NumberOfPins);
 
         // Assert
-        game.Frame.Should().Be(1);
+        game.Frame.Id.Should().Be(1);
     }
 
     [Fact(DisplayName = "Game | When player strikes in the first roll | Should add next 2 rolls points.")]
@@ -146,6 +146,115 @@ public class GameTests
 
         // Assert
         game.Score().Should().Be(190);
+    }
+
+    [Fact(DisplayName = "Game | When two players are added | Should track points for both players.")]
+    public void Game_WhenTwoPlayersAreAdded_ShouldTrackPointsForBothPlayers()
+    {
+        // Arrange
+        var game = new Game();
+        var player1= new Player("Player 1");
+        game.AddPlayer(player1);
+        var player2 = new Player("Player 2");
+        game.AddPlayer(player2);
+
+        // Act
+        // Player 1
+        game.Roll(3);
+        game.Roll(5);
+
+        // Player 2
+        game.Roll(2);
+        game.Roll(4);
+
+        // Assert
+        game.GetPlayerScore(player1.Id).Should().Be(8);
+        game.GetPlayerScore(player2.Id).Should().Be(6);
+    }
+
+    [Fact(DisplayName = "Game | When multiple players are playing | Should get the correct winner in the end of the game.")]
+    public void Game_WhenMultiplePlayersArePlaying_ShouldGetTheCorrectWinnerInTheEndOfTheGame()
+    {
+        // Arrange
+        var game = new Game();
+        var player1= new Player("Player 1");
+        game.AddPlayer(player1);
+        var player2 = new Player("Player 2");
+        game.AddPlayer(player2);
+        var player3 = new Player("Player 3");
+        game.AddPlayer(player3);
+
+        // Act
+        for (int i = 0; i < MaxNumberOfFrames - 1; i++)
+        {
+            // Player 1
+            game.Roll(3);
+            game.Roll(5);
+
+            // Player 2
+            game.Roll(10);
+
+            // Player 3
+            game.Roll(4);
+            game.Roll(6);
+        }
+        // Player 1
+        game.Roll(3);
+        game.Roll(5);
+        game.Roll(1);
+
+        // Player 2
+        game.Roll(10);
+        game.Roll(10);
+        game.Roll(10);
+
+        // Player 3
+        game.Roll(4);
+        game.Roll(6);
+        game.Roll(5);
+
+        // Assert
+        game.Winner?.Id.Should().Be(player2.Id);
+        game.GetPlayerScore(game.Winner?.Id ?? 0).Should().Be(300);
+    }
+
+    [Fact(DisplayName = "Game | When there is no more round to play and a roll attempt was done | Should throw exception.")]
+    public void Game_WhenThereIsNoMoreRoundToPlayAndARollAttemptIsDone_ShouldThrowException()
+    {
+        // Arrange
+        var game = new Game();
+        game.AddPlayer(new Player("Player 1"));
+        
+        for (int i = 0; i < MaxNumberOfFrames; i++)
+        {
+            game.Roll(1);
+            game.Roll(8);
+        }
+        game.Roll(1);
+
+        // Act
+        Action act = () => game.Roll(2);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact(DisplayName = "Game | When adding more players than allowed by the game | Should throw exception.")]
+    public void Game_AddingMorePlayersThanAllowedByTheGame_ShouldThrowException()
+    {
+        // Arrange
+        const int maxNumberOfPlayers = 4;
+        var game = new Game(maxNumberOfPlayers);
+        for (int i = 0; i < maxNumberOfPlayers; i++)
+        {
+            game.AddPlayer(new Player($"Player {i + 1}"));
+        }
+
+        // Act
+        Action act = () => game.AddPlayer(new Player($"Player {maxNumberOfPlayers + 1}")); 
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>();
     }
 
     [InlineData(-5)]

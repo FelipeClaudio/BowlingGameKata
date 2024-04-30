@@ -8,4 +8,6 @@ public class Frame
     public bool ScoredAStrike { get; set; }
     public bool ScoredASpare { get; set; }
     public List<Roll> Rolls { get; set; } = [];
+    public int CurrentTry { get; set; }
+    public bool IsLatest { get; set; }
 }
