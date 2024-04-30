@@ -172,6 +172,52 @@ public class GameTests
         game.GetPlayerScore(player2.Id).Should().Be(6);
     }
 
+    [Fact(DisplayName = "Game | When multiple players are playing | Should get the correct winner in the end of the game.")]
+    public void Game_WhenMultiplePlayersArePlaying_ShouldGetTheCorrectWinnerInTheEndOfTheGame()
+    {
+        // Arrange
+        var game = new Game();
+        var player1= new Player("Player 1");
+        game.AddPlayer(player1);
+        var player2 = new Player("Player 2");
+        game.AddPlayer(player2);
+        var player3 = new Player("Player 3");
+        game.AddPlayer(player3);
+
+        // Act
+        for (int i = 0; i < MaxNumberOfFrames - 1; i++)
+        {
+            // Player 1
+            game.Roll(3);
+            game.Roll(5);
+
+            // Player 2
+            game.Roll(10);
+
+            // Player 3
+            game.Roll(4);
+            game.Roll(6);
+        }
+        // Player 1
+        game.Roll(3);
+        game.Roll(5);
+        game.Roll(1);
+
+        // Player 2
+        game.Roll(10);
+        game.Roll(10);
+        game.Roll(10);
+
+        // Player 3
+        game.Roll(4);
+        game.Roll(6);
+        game.Roll(5);
+
+        // Assert
+        game.Winner?.Id.Should().Be(player2.Id);
+        game.GetPlayerScore(game.Winner?.Id ?? 0).Should().Be(300);
+    }
+
     [Fact(DisplayName = "Game | When there is no more round to play and a roll attempt was done | Should throw exception.")]
     public void Game_WhenThereIsNoMoreRoundToPlayAndARollAttemptIsDone_ShouldThrowException()
     {

@@ -48,8 +48,15 @@ public class Game(int maxNumberOfPlayers = 4)
             MoveToNextPlay(currentFrameForPlayer);
             return;
         }
-
         currentFrameForPlayer.CurrentTry++;
+
+        if ((currentFrameForPlayer.Id == (MaxFrames - 1)) &&
+            (currentFrameForPlayer.CurrentTry == 3) &&
+                _currentPlayerIndex != _players.Count -1)
+        {
+            MoveToNextPlay(currentFrameForPlayer);
+            return;
+        }
 
         if ((currentFrameForPlayer.Id == (MaxFrames - 1)) && 
             (currentFrameForPlayer.CurrentTry == 3) && 
@@ -63,7 +70,7 @@ public class Game(int maxNumberOfPlayers = 4)
     {
         var winnerPlayerId = _frames.GroupBy(frame => frame.PlayerId)
             .ToDictionary(group => group.Key, group => group.Sum(frame => frame.Score))
-            .OrderByDescending(x => x.Key)
+            .OrderByDescending(x => x.Value)
             .First().Key;
 
         return _players[winnerPlayerId];
@@ -72,7 +79,11 @@ public class Game(int maxNumberOfPlayers = 4)
     private void MoveToNextPlay(Frame currentFrameForPlayer)
     {
         currentFrameForPlayer.IsLatest = false;
-        _frames[currentFrameForPlayer.Id + 1].IsLatest = true;
+        var nextFrame = _frames.SingleOrDefault(frame => frame.Id == currentFrameForPlayer.Id + 1 
+            && frame.PlayerId == _currentPlayerIndex);
+
+        if (nextFrame != null)
+            nextFrame.IsLatest = true;
 
         if (_players.Count > 1) 
         {
@@ -105,9 +116,11 @@ public class Game(int maxNumberOfPlayers = 4)
 
     private void AddScoreToPreviousRoll(int score)
     {
-        var previousFrameForPlayer = _frames
-            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 1) && frame.PlayerId == CurrentPlayer.Id);
         var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
+
+        var previousFrameForPlayer = _frames
+            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 1) 
+            && frame.PlayerId == CurrentPlayer.Id);
 
         if (previousFrameForPlayer == null)
             return;
@@ -122,15 +135,14 @@ public class Game(int maxNumberOfPlayers = 4)
             return;
 
         if (previousFrameForPlayer.ScoredASpare || previousFrameForPlayer.ScoredAStrike)
-        {
             previousFrameForPlayer.Score += score;
-        }
     }
 
     private void AddScoreForTheFrameBeforeTheRoll(int score)
     {
         var rollBeforePreviousForPlayer = _frames
-            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 2));
+            .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 2) 
+            && frame.PlayerId == CurrentPlayer.Id);
 
         if (rollBeforePreviousForPlayer == null)
             return;
