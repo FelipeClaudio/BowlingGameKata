@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace BowlingGameKata.Domain.Models;
+﻿namespace BowlingGameKata.Domain.Models;
 
 public class Game(int maxNumberOfPlayers = 4)
 {
@@ -8,13 +6,15 @@ public class Game(int maxNumberOfPlayers = 4)
 
     public Player? Winner = null;
 
-    private const int MaxGamePoints = 300;
     private const int NumberOfPins = 10;
     private const int MaxFrames = 10;
 
     private readonly List<Player> _players = [];
     private int _currentPlayerIndex = 0;
-
+    private bool IsTheFirstRollInsideFrame => Frame.CurrentTry == 0;
+    private bool IsTheSecondRollInsideFrame => Frame.CurrentTry == 1;
+    private bool IsTheThirdRollInsideFrame => Frame.CurrentTry == 2;
+    private bool IsTheLastFrameOfTheGame => Frame.Id == (MaxFrames - 1);
     private readonly List<Frame> _frames = [];
     private readonly int _maxNumberOfPlayers = maxNumberOfPlayers;
 
@@ -31,39 +31,31 @@ public class Game(int maxNumberOfPlayers = 4)
         if (Winner is not null)
             throw new InvalidOperationException("Cannot play anymore as the game is already finished.");
 
-        var incrementedCurrentPlayerScore = GetFrameForPlayer(_currentPlayerIndex).Score + numberOfPinsKnockedDown;
-
-        AddScore(numberOfPinsKnockedDown);
-
         var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
 
-        if (currentFrameForPlayer.CurrentTry == 0 && incrementedCurrentPlayerScore == NumberOfPins)
-            currentFrameForPlayer.ScoredAStrike = true;
+        AddScore(currentFrameForPlayer, numberOfPinsKnockedDown);
 
-        if (currentFrameForPlayer.CurrentTry == 1 && incrementedCurrentPlayerScore == NumberOfPins)
-            currentFrameForPlayer.ScoredASpare = true;
-
-        if (currentFrameForPlayer.Id < (MaxFrames - 1) && (currentFrameForPlayer.CurrentTry == 1 || incrementedCurrentPlayerScore == NumberOfPins))
+        if (!IsTheLastFrameOfTheGame && (IsTheSecondRollInsideFrame || currentFrameForPlayer.ScoredAStrike))
         {
             MoveToNextPlay(currentFrameForPlayer);
             return;
         }
+
+        bool isTheLastRollForPlayer = IsTheLastFrameOfTheGame && IsTheThirdRollInsideFrame;
         currentFrameForPlayer.CurrentTry++;
-
-        if ((currentFrameForPlayer.Id == (MaxFrames - 1)) &&
-            (currentFrameForPlayer.CurrentTry == 3) &&
-                _currentPlayerIndex != _players.Count -1)
+        if (!isTheLastRollForPlayer)
         {
-            MoveToNextPlay(currentFrameForPlayer);
             return;
         }
 
-        if ((currentFrameForPlayer.Id == (MaxFrames - 1)) && 
-            (currentFrameForPlayer.CurrentTry == 3) && 
-            (_currentPlayerIndex == _players.Count - 1))
+        bool isTheLastPlayerToPlayTheGame = _currentPlayerIndex == _players.Count - 1;
+        if (isTheLastPlayerToPlayTheGame)
         {
-            Winner = SetGameWinner();
+            Winner = SetGameWinner(); 
+            return;
         }
+
+        MoveToNextPlay(currentFrameForPlayer);
     }
 
     private Player SetGameWinner()
@@ -79,10 +71,11 @@ public class Game(int maxNumberOfPlayers = 4)
     private void MoveToNextPlay(Frame currentFrameForPlayer)
     {
         currentFrameForPlayer.IsLatest = false;
-        var nextFrame = _frames.SingleOrDefault(frame => frame.Id == currentFrameForPlayer.Id + 1 
-            && frame.PlayerId == _currentPlayerIndex);
+        var nextFrame = _frames
+            .SingleOrDefault(frame => frame.Id == currentFrameForPlayer.Id + 1 
+                && frame.PlayerId == _currentPlayerIndex);
 
-        if (nextFrame != null)
+        if (nextFrame is not null)
             nextFrame.IsLatest = true;
 
         if (_players.Count > 1) 
@@ -102,58 +95,57 @@ public class Game(int maxNumberOfPlayers = 4)
             .Where(frame => frame.PlayerId == playerId)
             .Sum(frame => frame.Score);
 
-    public void AddScore(int score)
+    public void AddScore(Frame currentFrameForPlayer, int numberOfPinsKnockedDown)
     {
-        var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
-        currentFrameForPlayer.Score += score;
+        var incrementedCurrentPlayerScore = currentFrameForPlayer.Score + numberOfPinsKnockedDown;
+
+        currentFrameForPlayer.Score += numberOfPinsKnockedDown;
         currentFrameForPlayer.Rolls.Add(new Roll { Id = CurrentPlayer.CurrentRoll });
 
-        AddScoreToPreviousRoll(score);
-        AddScoreForTheFrameBeforeTheRoll(score);
+        currentFrameForPlayer.ScoredAStrike = IsTheFirstRollInsideFrame && incrementedCurrentPlayerScore == NumberOfPins;
+        currentFrameForPlayer.ScoredASpare = IsTheSecondRollInsideFrame && incrementedCurrentPlayerScore == NumberOfPins;
+
+        AddScoreToPreviousRoll(currentFrameForPlayer, numberOfPinsKnockedDown);
+        AddScoreForTheFrameBeforeTheRoll(currentFrameForPlayer, numberOfPinsKnockedDown);
 
         CurrentPlayer.CurrentRoll++;
     }
 
-    private void AddScoreToPreviousRoll(int score)
+    private void AddScoreToPreviousRoll(Frame currentFrameForPlayer, int score)
     {
-        var currentFrameForPlayer = GetFrameForPlayer(_currentPlayerIndex);
-
         var previousFrameForPlayer = _frames
             .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 1) 
-            && frame.PlayerId == CurrentPlayer.Id);
+                && frame.PlayerId == CurrentPlayer.Id);
 
-        if (previousFrameForPlayer == null)
+        if (previousFrameForPlayer is null)
             return;
 
-        if (currentFrameForPlayer.Id == (MaxFrames - 1) && currentFrameForPlayer.CurrentTry > 1)
-            return;
+        bool isTheLastRollOfTheLastFrame = IsTheLastFrameOfTheGame && IsTheSecondRollInsideFrame;
+        bool hasMoreThan1RollBetweenCurrentAndLastFrame = (CurrentPlayer.CurrentRoll - previousFrameForPlayer.Rolls.Max(roll => roll.Id)) > 1;
+        bool isPreviousRollInTheSameFrame = currentFrameForPlayer.Id == previousFrameForPlayer.Id;
 
-        if ((CurrentPlayer.CurrentRoll - previousFrameForPlayer.Rolls.Max(roll => roll.Id)) > 1)
-            return;
-
-        if (GetFrameForPlayer(_currentPlayerIndex).Id == previousFrameForPlayer.Id)
+        if (isTheLastRollOfTheLastFrame || hasMoreThan1RollBetweenCurrentAndLastFrame || isPreviousRollInTheSameFrame)
             return;
 
         if (previousFrameForPlayer.ScoredASpare || previousFrameForPlayer.ScoredAStrike)
             previousFrameForPlayer.Score += score;
     }
 
-    private void AddScoreForTheFrameBeforeTheRoll(int score)
+    private void AddScoreForTheFrameBeforeTheRoll(Frame currentFrameForPlayer, int score)
     {
         var rollBeforePreviousForPlayer = _frames
             .SingleOrDefault(frame => frame.Rolls.Any(roll => roll.Id == CurrentPlayer.CurrentRoll - 2) 
             && frame.PlayerId == CurrentPlayer.Id);
 
-        if (rollBeforePreviousForPlayer == null)
+        if (rollBeforePreviousForPlayer is null)
             return;
 
-        if (GetFrameForPlayer(_currentPlayerIndex).Id == rollBeforePreviousForPlayer.Id)
+        bool rollBeforePreviousIsInTheSameFrame = currentFrameForPlayer.Id == rollBeforePreviousForPlayer.Id;
+        if (rollBeforePreviousIsInTheSameFrame)
             return;
 
         if (rollBeforePreviousForPlayer.ScoredAStrike)
-        {
             rollBeforePreviousForPlayer.Score += score;
-        }
     }
 
     private Frame GetFrameForPlayer(int playerId) =>

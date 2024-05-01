@@ -216,6 +216,8 @@ public class GameTests
         // Assert
         game.Winner?.Id.Should().Be(player2.Id);
         game.GetPlayerScore(game.Winner?.Id ?? 0).Should().Be(300);
+        game.GetPlayerScore(player1.Id).Should().Be(81);
+        game.GetPlayerScore(player3.Id).Should().Be(141);
     }
 
     [Fact(DisplayName = "Game | When there is no more round to play and a roll attempt was done | Should throw exception.")]
